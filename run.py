@@ -13,6 +13,8 @@ def load_dicom_images(path):
     return images
 
 
+from sklearn.cluster import KMeans
+
 def segment_tissues(image):
     # Normalizar a imagem
     normalized_image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
@@ -20,21 +22,24 @@ def segment_tissues(image):
     # Filtro de mediana para reduzir ruído
     filtered_image = cv2.medianBlur(normalized_image, 5)
 
-    # Aqui você precisa implementar uma segmentação mais avançada para distinguir os diferentes tecidos
-    # Este é apenas um exemplo básico
-    _, binary_image_fibroglandular = cv2.threshold(filtered_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    _, binary_image_fatty = cv2.threshold(filtered_image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # Preparar os dados para o K-means
+    pixels = filtered_image.reshape(-1, 1)
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    labels = kmeans.fit_predict(pixels)
 
-    # Supondo que a prótese mamária seja o tecido restante
-    binary_image_prosthesis = cv2.bitwise_and(cv2.bitwise_not(binary_image_fibroglandular), cv2.bitwise_not(binary_image_fatty))
+    # Criar imagens binárias para cada tipo de tecido
+    binary_image_fibroglandular = (labels == 0).reshape(filtered_image.shape).astype(np.uint8) * 255
+    binary_image_fatty = (labels == 1).reshape(filtered_image.shape).astype(np.uint8) * 255
+    binary_image_prosthesis = (labels == 2).reshape(filtered_image.shape).astype(np.uint8) * 255
 
     # Colorindo os tecidos
-    color_image = cv2.cvtColor(normalized_image, cv2.COLOR_GRAY2BGR)
+    color_image = np.zeros((*filtered_image.shape, 3), dtype=np.uint8)  # Cria uma nova imagem colorida com o mesmo tamanho da imagem original
     color_image[binary_image_fibroglandular == 255] = [255, 0, 0]  # Fibroglandular em vermelho
     color_image[binary_image_fatty == 255] = [0, 255, 0]  # Gorduroso em verde
     color_image[binary_image_prosthesis == 255] = [0, 0, 255]  # Prótese mamária em azul
 
     return color_image, binary_image_fibroglandular, binary_image_fatty, binary_image_prosthesis
+
 
 def quantify_and_save(images, output_path):
     tissue_percentages = []
