@@ -3,3 +3,4 @@ pydicom
 opencv-python
 scikit-image
 scikit-learn
+skimage
