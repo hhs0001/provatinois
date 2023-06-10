@@ -24,7 +24,7 @@ def segment_tissues(image):
     cut_image = normalized_image[:int(normalized_image.shape[0] * 0.7), :]
 
     # Filtro de mediana para reduzir ruído
-    filtered_image = cv2.medianBlur(cut_image, 5)
+    filtered_image = cv2.bilateralFilter(cut_image, 5, 75, 75)
 
     # Máscara do fundo (pixels com valor 0)
     background_mask = (filtered_image == 0)

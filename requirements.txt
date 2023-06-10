@@ -1,6 +1,5 @@
 numpy
 pydicom
-opencv-python
+cv2
 scikit-image
-scikit-learn
-skimage
+scipy
